@@ -1018,8 +1018,12 @@ static NSCalendar * calendar=nil;
 }
 
 -(NSDate*) nextOccurrenceSince:(NSNumber*) filter_begin_ts {
+    
+    NSDate * d = [[NSDate alloc] init];
+    NSNumber *filter_end_ts = [NSNumber numberWithFloat: [[d dateByAddingTimeInterval: 3153600000] timeIntervalSince1970]];
+    
     NSMutableArray* occurences = [NSMutableArray array];
-    if ((filter_begin_ts ==nil ) &&
+    if ((filter_begin_ts ==nil || filter_end_ts == nil) &&
         self.rrule_count == nil && self.rrule_until == nil) {
         return nil; // infinity of results => must be processed with filter_begin_ts & filter_end_ts
     }
@@ -1027,22 +1031,33 @@ static NSCalendar * calendar=nil;
     NSDate * current_date = self.start_date;
     NSUInteger count = 0;
     NSUInteger count_period = 0;
+    /*  if ([self.rrule_freq isEqualToString:@"WEEKLY"]) {
+     NSLog(@"%@",current_date);
+     NSLog(@"bla %d %d %d %f %f %d",(!self.rrule_count || count < [self.rrule_count intValue]),(!self.rrule_until || [current_date timeIntervalSince1970] <= [self.rrule_until doubleValue]), (!filter_end_ts || [current_date timeIntervalSince1970] <= [filter_end_ts doubleValue]),[current_date timeIntervalSince1970], [filter_end_ts doubleValue],[current_date timeIntervalSince1970]<= [filter_end_ts doubleValue]);
+     }*/
     NSDateComponents * dc = [[NSDateComponents alloc]init];
     BOOL dobreak=NO;
     
     while (!dobreak && (!self.rrule_count || count < [self.rrule_count intValue])
-           && (!self.rrule_until || [current_date timeIntervalSince1970] <= [self.rrule_until floatValue])
+           && (!self.rrule_until || [current_date timeIntervalSince1970] <= [self.rrule_until doubleValue])
+           && (!filter_end_ts || [current_date timeIntervalSince1970] <= [filter_end_ts doubleValue])
            ){
         
         NSDateComponents * current_date_components = [calendar components:ALL_DATE_FLAGS fromDate:current_date];
+        // NSString * day = [self dayFromNoDay:current_date_components.weekday];
+        
         NSUInteger d        =       current_date_components.day;
         NSUInteger m        =       current_date_components.month;
         NSUInteger y        =       current_date_components.year;
-        
+        /*    NSUInteger week_no  =       current_date_components.weekOfYear;
+         NSUInteger h        =       current_date_components.hour;
+         NSUInteger min      =       current_date_components.minute;
+         NSUInteger s        =       current_date_components.second;
+         */
         self.current_pos = 1;
         self.old_pos = [NSMutableArray array];
         
-        if(count_period % self.rrule_interval == 0 && [self checkRule:current_date]){
+        if(count_period % self.rrule_interval ==0 && [self checkRule:current_date]){
             if ([self.rrule_freq isEqualToString:@"DAILY"]) {
                 
                 for (int h_it = 0; !dobreak  && h_it < [self.rrule_byhour count]; h_it++) {
@@ -1064,13 +1079,14 @@ static NSCalendar * calendar=nil;
                                 [self.old_pos addObject:date_to_push];
                                 continue;
                             }
-                            if(self.rrule_until !=nil && ts_to_push > [self.rrule_until floatValue]) {
+                            if((self.rrule_until !=nil && ts_to_push > [self.rrule_until doubleValue]) ||
+                               (filter_end_ts != nil && ts_to_push > [filter_end_ts doubleValue])){
                                 // goto period_loop;
                                 dobreak=YES;
                                 break;
                             }
                             if (ts_to_push >= _start_ts) {
-                                if(filter_begin_ts ==nil || ts_to_push >= [filter_begin_ts floatValue]){
+                                if(filter_begin_ts ==nil || ts_to_push >= [filter_begin_ts doubleValue]){
                                     return date_to_push;
                                 }
                                 count++;
@@ -1119,7 +1135,9 @@ static NSCalendar * calendar=nil;
                 NSDate * it_date = period_begin;
                 while ([it_date timeIntervalSince1970] < [until timeIntervalSince1970]) {
                     NSTimeInterval it_date_ts = [it_date timeIntervalSince1970];
-                    if (self.rrule_until && it_date_ts > [self.rrule_until floatValue])
+                    if ((self.rrule_until && it_date_ts > [self.rrule_until doubleValue])||
+                        (filter_end_ts && it_date_ts > [filter_end_ts doubleValue])
+                        )
                     {
                         //  goto period_loop;
                         break;
@@ -1140,13 +1158,14 @@ static NSCalendar * calendar=nil;
                                         [self.old_pos addObject:date_to_push];
                                         continue;
                                     }
-                                    if (self.rrule_until && ts_to_push > [self.rrule_until floatValue]) {
+                                    if ((self.rrule_until && ts_to_push > [self.rrule_until doubleValue]) ||
+                                        (filter_end_ts && ts_to_push > [filter_end_ts doubleValue])) {
                                         // goto period_loop;
                                         dobreak = YES;
                                         break;
                                     }
                                     if (ts_to_push >= _start_ts) {
-                                        if (!filter_begin_ts ||  ts_to_push>= [filter_begin_ts floatValue]) {
+                                        if (!filter_begin_ts ||  ts_to_push>= [filter_begin_ts doubleValue]) {
                                             return date_to_push;
                                         }
                                         count++;
@@ -1203,10 +1222,35 @@ static NSCalendar * calendar=nil;
     [dc release];
     
     NSMutableArray * occurrences_without_exdates = [NSMutableArray array];
-   
+    //period_loop:
+    
+    /*
+     // removes exdates
+     var nb_occurrences = occurrences.length;
+     var occurrences_without_exdates = [];
+     for (var i = 0; i < nb_occurrences; i++) {
+     var occurrence = occurrences[i];
+     var ts = occurrence.getTime();
+     if (!(this.exception_dates.in_array(ts))) {
+     occurrences_without_exdates.push(this.test_mode ? ts : occurrence);
+     }
+     }
+     return occurrences_without_exdates;
+     
+     */
+    
+    //    NSLog(@"%@",[occurences description]);
+    
+    //  NSLog(@"%@",[self.exception_dates description]);
+    
+    
+    
+    
+    //  NSLog(@"%@",[self.exception_dates description]);
     for (int i =0; i<[occurences count]; i++) {
         NSDate * occurence = [occurences objectAtIndex:i];
-        NSNumber * ts = [NSNumber numberWithFloat:[occurence timeIntervalSince1970]];
+        NSNumber * ts = [NSNumber numberWithDouble:[occurence timeIntervalSince1970]];
+        //     NSLog(@"%@ , %d",[occurence description],[ts intValue]);
         if (![self.exception_dates containsObject:ts]) {
             return occurence;
         }
