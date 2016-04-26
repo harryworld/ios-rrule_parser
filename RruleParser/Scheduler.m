@@ -1013,11 +1013,11 @@ static NSCalendar * calendar=nil;
     
 }
 
--(NSDate*) nextOccurenceFrom:(NSDate*) from {
-    return [self nextOccurenceSince: [NSNumber numberWithFloat: [from timeIntervalSince1970]]];
+-(NSDate*) nextOccurrenceFrom:(NSDate*) from {
+    return [self nextOccurrenceSince: [NSNumber numberWithFloat: [from timeIntervalSince1970]]];
 }
 
--(NSDate*) nextOccurenceSince:(NSNumber*) filter_begin_ts {
+-(NSDate*) nextOccurrenceSince:(NSNumber*) filter_begin_ts {
     NSMutableArray* occurences = [NSMutableArray array];
     if ((filter_begin_ts ==nil ) &&
         self.rrule_count == nil && self.rrule_until == nil) {
