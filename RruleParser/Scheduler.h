@@ -88,6 +88,10 @@
 -(NSDate*) nextPeriod:(NSDate*) date;
 -(BOOL) checkRule:(NSDate*) date;
 
+// Addition from Leo
+-(NSDate*) nextOccurenceSince:(NSNumber*) filter_begin_ts;
+-(NSDate*) nextOccurenceFrom:(NSDate*) from;
+
 -(NSArray*) occurencesBetween:(NSDate*) start  andDate:(NSDate*) end;
 
 -(BOOL) checkDay:(NSDate*) date;
