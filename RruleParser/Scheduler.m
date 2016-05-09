@@ -1165,7 +1165,23 @@ static NSCalendar * calendar=nil;
                                     }
                                     if (ts_to_push >= _start_ts) {
                                         if (!filter_begin_ts ||  ts_to_push > [filter_begin_ts doubleValue]) {
-                                            return date_to_push;
+                                            
+                                            // Note from: Leo Tumwattana May 9th 2015
+                                            // This is a really hacky way of getting bySetPos:-1 to work for monthly rrule_bymonthday
+                                            // Should really clean this up on rewrite, but should do for now
+                                            if (self.rrule_bysetpos != nil && [self.rrule_bysetpos isKindOfClass:[NSArray class]] && self.rrule_bymonthday != nil) {
+                                                int bySetPos = [self.rrule_bysetpos.firstObject intValue];
+                                                if (bySetPos == -1) {
+                                                    int monthDayCount = [self.rrule_bymonthday count];
+                                                    if (count >= monthDayCount) {
+                                                        return date_to_push;
+                                                    }
+                                                } else {
+                                                    return date_to_push;
+                                                }
+                                            } else {
+                                                return date_to_push;
+                                            }
                                         }
                                         count++;
                                     }
@@ -1194,6 +1210,7 @@ static NSCalendar * calendar=nil;
                 }
                 
                 if ([self.rrule_bysetpos isKindOfClass:[NSArray class]]) {
+                    
                     for (int it_pos = 0; it_pos < [self.rrule_bysetpos count]; it_pos++) {
                         int pos = [[self.rrule_bysetpos objectAtIndex:it_pos] intValue];
                         if (pos < 0) {
