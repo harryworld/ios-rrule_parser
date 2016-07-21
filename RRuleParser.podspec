@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "RRuleParser"
-  s.version      = "0.2.0"
+  s.version      = "0.2.1"
   s.summary      = "Objective-C 2 parser for recurrent rules with ability to parse iCalendar RRULE format (from RFC 5545 spec)"
   s.homepage     = "https://github.com/harryworld/ios-rrule_parser"
   s.license      = { :type => "MIT", :file => "license.txt" }
